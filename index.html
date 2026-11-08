@@ -184,6 +184,7 @@ img,i.px{image-rendering:pixelated}
 .bnav:active{transform:scale(.92)}.bnav:disabled{opacity:.35;cursor:default}
 #bClose{position:absolute;right:-8px;top:-14px;z-index:3;width:38px;height:38px;padding:0;background:#8a3a2a;border:3px solid #000;color:#fff;font:14px var(--pix);box-shadow:inset -3px -3px 0 #5a2218,inset 3px 3px 0 #c8705a}
 #bkAgain{width:auto;min-width:150px;margin:0;font-size:11px;padding:11px 12px 9px}
+@media (max-height:420px){#screen-pause .help{display:none}#screen-pause h2{margin-bottom:8px}#screen-pause .credit{margin-top:4px}}
 @media (max-height:520px){#book{height:90vh}.mc-btn{padding:10px 8px 8px;margin:4px auto;font-size:11px}.mc-btn.big{font-size:14px;padding:12px 8px 10px}#logo .sub{margin-top:8px}}
 @media (max-height:420px){#titleBtns{margin-bottom:2vh}#titleHint{display:none}#screen-title{padding-top:calc(2vh + var(--sat))}}
 </style>
@@ -250,7 +251,7 @@ img,i.px{image-rendering:pixelated}
   <button class="mc-btn" id="pRespawn">Respawn at Checkpoint</button>
   <div class="row"><button class="mc-btn" id="pSnd">Sound: ON</button><button class="mc-btn" id="pCtl">On-screen Controls: ON</button></div>
   <div class="row"><button class="mc-btn" id="pSprint">Auto-Sprint: OFF</button><button class="mc-btn" id="pFs">Full Screen</button></div>
-  <button class="mc-btn warn" id="pRestart">Restart Game</button>
+  <div class="row"><button class="mc-btn" id="pHand">Show Hand: ON</button><button class="mc-btn warn" id="pRestart">Restart Game</button></div>
   <div class="help" id="pHelp"></div>
   <div class="credit">Made by REDBOSS</div>
 </div>
@@ -2089,9 +2090,7 @@ function iconURL(k) { return ICONS[k] || (ICONS[k] = itemCanvas(k).toDataURL());
 const Inv = {
   slots: new Array(36).fill(null), cursor: null, sel: 0, open: false,
   init() {
-    ['sword', 'pickaxe', 'apple', 'bread', 'torch', 'slime', 'pearl', 'coin', 'book'].forEach((k, i) => { this.slots[i] = { k }; });
-    ['apple', 'bread', 'torch', 'slime', 'pearl', 'apple', 'bread'].forEach((k, i) => { this.slots[9 + i] = { k }; });
-    this.buildHotbar();
+    this.buildHotbar(); /* inventory and hotbar start empty */
   },
   held() { const s = this.slots[this.sel]; return s ? s.k : null; },
   mkSlot(i, onTap) {
@@ -2308,7 +2307,7 @@ const FW_COLORS = [[1, .3, .3], [1, .85, .2], [.4, 1, .5], [.4, .8, 1], [.9, .5,
 const FOOD = { apple: 4, bread: 5 };
 
 const G = {
-  mode: 'boot', paused: false, busy: false, t: 0, vt: 0, simT: 0, acc: 0, alpha: 1, last: 0, q: 1, ftAvg: .016, qCool: 3,
+  mode: 'boot', showHand: true, paused: false, busy: false, t: 0, vt: 0, simT: 0, acc: 0, alpha: 1, last: 0, q: 1, ftAvg: .016, qCool: 3,
   P: new PState(), health: 20, food: 20, zones: {}, zone: null, zoneKey: '', coins: null, collecting: null, hover: -1,
   cpIdx: 0, maxPlat: 0, curSec: -1, later_: [], swing: 0, eatT: 0, bobPhase: 0, handBob: 0, eyeH: 1.62, camPos: [0, 0, 0], deathT: 0, fwUntil: 0, fwNext: 0, ended: false,
   proj: M4.create(), view: M4.create(), vp: M4.create(), hproj: M4.create(), tmpA: M4.create(), tmpB: M4.create(), heldK: null, dim: [1, 1], rsKey: '',
@@ -2326,7 +2325,7 @@ const G = {
     this.fireP = new Particles(R, 900, true, true); this.glowP = new Particles(R, 500, true, true); this.partP = new Particles(R, 1400, false, false);
     this.zones.lobby = buildLobby(R); await tick(85);
     Input.init(canvas); this.wire();
-    Input.autoSprint = Store.get('autoSprint', IS_TOUCH);
+    Input.autoSprint = Store.get('autoSprint', IS_TOUCH); this.showHand = Store.get('hand', true) !== false;
     const wantTouch = Store.get('touchUI', IS_TOUCH); Input.setTouchUI(!!wantTouch);
     this.setSound(Store.get('sound', true), true); this.updateButtons();
     this.setZone('lobby'); this.mode = 'title'; this.refreshLayers();
@@ -2342,7 +2341,7 @@ const G = {
     on('pResume', () => this.pause(false)); on('pRespawn', () => { this.pause(false); this.respawn(true); });
     on('pSnd', () => this.setSound(!Snd.enabled)); on('pCtl', () => { Input.setTouchUI(!Input.touchUI); this.updateButtons(); });
     on('pSprint', () => { Input.autoSprint = !Input.autoSprint; Store.set('autoSprint', Input.autoSprint); this.updateButtons(); }); on('pFs', () => this.toggleFs());
-    on('pRestart', () => this.restartGame()); on('dRespawn', () => this.respawn(false)); on('dRestart', () => this.restartGame());
+    on('pHand', () => { this.showHand = !this.showHand; Store.set('hand', this.showHand); this.updateButtons(); }); on('pRestart', () => this.restartGame()); on('dRespawn', () => this.respawn(false)); on('dRestart', () => this.restartGame());
     on('cAgain', () => this.restartGame()); on('bkAgain', () => this.restartGame());
     on('bPause', () => this.pause(true)); on('bInv', () => this.toggleInv()); on('invClose', () => this.toggleInv());
     on('bSnd', () => this.setSound(!Snd.enabled)); on('bFs', () => this.toggleFs());
@@ -2359,7 +2358,7 @@ const G = {
   updateButtons() {
     const s = Snd.enabled ? 'ON' : 'OFF'; $('tSnd').textContent = 'Sound: ' + s; $('pSnd').textContent = 'Sound: ' + s; $('bSnd').classList.toggle('active', !Snd.enabled);
     $('sndPath').setAttribute('d', Snd.enabled ? 'M3 9v6h4l5 4V5L7 9zM14 8.5a5 5 0 010 7l1.4 1.4a7 7 0 000-9.8zM17 5.5a9 9 0 010 13l1.4 1.4a11 11 0 000-15.8z' : 'M3 9v6h4l5 4V5L7 9zM15 9.4l1.4-1.4 2.1 2.1 2.1-2.1 1.4 1.4-2.1 2.1 2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1z');
-    $('pCtl').textContent = 'On-screen Controls: ' + (Input.touchUI ? 'ON' : 'OFF'); $('pSprint').textContent = 'Auto-Sprint: ' + (Input.autoSprint ? 'ON' : 'OFF');
+    $('pCtl').textContent = 'On-screen Controls: ' + (Input.touchUI ? 'ON' : 'OFF'); $('pSprint').textContent = 'Auto-Sprint: ' + (Input.autoSprint ? 'ON' : 'OFF'); $('pHand').textContent = 'Show Hand: ' + (this.showHand ? 'ON' : 'OFF');
     const fs = !!(document.fullscreenElement || document.webkitFullscreenElement); $('bFs').classList.toggle('active', fs); $('pFs').textContent = fs ? 'Exit Full Screen' : 'Full Screen'; $('tFs').textContent = fs ? 'Exit Full Screen' : 'Full Screen';
   },
   setSound(v, silent) { Snd.init(); Snd.set(v); Store.set('sound', v); this.updateButtons(); if (!silent && v) Snd.ui(); },
@@ -2685,7 +2684,10 @@ const G = {
   },
   drawHand(asp) {
     const R = this.R; if (['title', 'dying', 'dead', 'book', 'ended'].includes(this.mode)) return;
+    if (!this.showHand) return;
     R.clearDepth(); M4.persp(this.hproj, 70 * PI / 180, asp, .02, 6);
+    const S = clamp(asp / 1.05, .58, 1); /* portrait phones: scale the hand down around the bottom-right corner so it never covers the view */
+    if (S < 1) { const sm = this.tmpHS || (this.tmpHS = M4.create()), pr = this.tmpHP || (this.tmpHP = M4.create()); pr.set(this.hproj); sm.set([S, 0, 0, 0, 0, S, 0, 0, 0, 0, 1, 0, 1 - S, -(1 - S), 0, 1]); M4.mul(this.hproj, sm, pr); }
     const P = this.P, b = this.handBob, ph = this.bobPhase, sw = this.swing > 0 ? Math.sin((1 - this.swing / .28) * PI) : 0, eat = this.eatT > 0 ? this.eatT : 0, tint = this.handTint;
     const bx = Math.cos(ph) * .035 * b, by = -Math.abs(Math.sin(ph)) * .04 * b + (P.onGround ? 0 : -.03);
     const ex = eat ? Math.sin(eat * 22) * .015 : 0, up = eat ? Math.min(1, (1.1 - eat) * 6, eat * 6) : 0;
