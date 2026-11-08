@@ -2608,7 +2608,7 @@ const G = {
     if (P.stepEv) { const m = P.standing; Snd.step(m ? BD[m.def.mat].snd : (BD[P.below] ? BD[P.below].snd : 'stone'), P.sprint); }
     if (P.landed) { Snd.land(P.landV, BD[P.below] ? BD[P.below].snd : 'stone'); this.partP.burst(P.x, P.y + .05, P.z, 6, 1.2, .8, .8, .8, .09, .5, 8, 0); }
     if (P.bounced) { Snd.slime(); this.partP.burst(P.x, P.y + .05, P.z, 16, 2, .5, .85, .4, .14, .7, 6, 1); }
-    if (Z.id === 'parkour' && (this.mode === 'play')) { this.parkourTick(); if (this.simT % 40 < DT && this.food > 7) { this.food -= 1; UI.setFood(this.food); } }
+    if (Z.id === 'parkour' && (this.mode === 'play')) this.parkourTick();
   },
 
   /* ---------- frame: visuals + render ---------- */
